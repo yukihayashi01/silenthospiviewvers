@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Silent Hospital — Interactive Roadmap</title>
+  <style>
+    :root{--bg:#0f1115;--card:#111217;--accent:#8fb7ff;--muted:#9aa4b2;--good:#34d399}
+    body{font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; background:linear-gradient(180deg,#09090b 0%, #0f1115 100%); color:#e6eef8; margin:0; padding:24px}
+    header{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+    h1{font-size:20px;margin:0}
+    p.lead{margin:0;color:var(--muted)}
+    .layout{display:grid;grid-template-columns:1fr 420px;gap:18px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:14px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,0.6);}
+
+    /* Gantt-style timeline */
+    .gantt{padding:12px}
+    .gantt-grid{display:grid;grid-template-columns:140px repeat(16,1fr);gap:8px;align-items:center}
+    .gantt-grid .row{display:contents}
+    .phase{font-weight:600}
+    .cell{height:28px;border-radius:6px;background:rgba(255,255,255,0.02);display:flex;align-items:center;padding:6px;font-size:12px;color:var(--muted)}
+    .bar{height:20px;border-radius:6px;background:linear-gradient(90deg,var(--accent),#5fb0ff);box-shadow:0 4px 10px rgba(79,142,255,0.12)}
+    /* simple mapping: columns represent half-weeks from Sept 15 to Dec 25 (approx 16 columns) */
+
+    /* Kanban */
+    .kanban{display:flex;gap:12px}
+    .column{flex:1;min-width:120px;background:rgba(255,255,255,0.02);padding:10px;border-radius:10px}
+    .col-title{font-size:13px;margin:0 0 8px 0;color:var(--muted)}
+    .card-item{background:linear-gradient(180deg,#0f1720,#0b1116);padding:10px;border-radius:8px;margin-bottom:8px;cursor:grab}
+    .card-item.dragging{opacity:0.6}
+
+    /* Progress & checklist */
+    .progress{display:flex;align-items:center;gap:12px}
+    .progress-bar{flex:1;height:12px;background:rgba(255,255,255,0.04);border-radius:999px;overflow:hidden}
+    .progress-fill{height:100%;width:0;background:linear-gradient(90deg,var(--good),#60a5fa);}
+    .small{font-size:13px;color:var(--muted)}
+
+    /* notes */
+    textarea{width:100%;height:140px;background:transparent;border:1px dashed rgba(255,255,255,0.04);padding:10px;border-radius:8px;color:inherit}
+
+    footer{margin-top:12px;display:flex;gap:8px}
+    button{background:var(--accent);border:none;padding:8px 10px;border-radius:8px;color:#061025;cursor:pointer;font-weight:600}
+    button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
+
+    .meta{font-size:12px;color:var(--muted);margin-top:8px}
+
+    @media (max-width:980px){.layout{grid-template-columns:1fr;}.gantt-grid{grid-template-columns:140px repeat(8,1fr)}}
+  </style>
+</head>
+<body>
+  <header>
+    <div style="width:52px;height:52px;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0b1220,#17212b)">
+      <img src="SH.png" alt="Silent Hospital Logo" style="width:100%;height:100%;object-fit:cover;display:block;" />
+    </div>
+    <div>
+      <h1>The Silent Hospital — Interactive Roadmap</h1>
+      <p class="lead">Solo dev plan • Target release: December • Autosaves to your browser (LocalStorage)</p>
+    </div>
+  </header>
+
+  <div class="layout">
+    <main>
+      <div class="card gantt" id="ganttCard">
+        <h3 style="margin-top:0">Gantt Timeline (Sept 15 → Dec 25)</h3>
+        <div class="gantt-grid" id="ganttGrid">
+          <!-- Header -->
+          <div class="phase">Phase</div>
+          <!-- 16 columns mapping to timeline -->
+        </div>
+        <p class="meta">Tip: Drag tasks in the Kanban to update status. Tick checkboxes to update progress.</p>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <h3 style="margin-top:0">Kanban Board</h3>
+        <!-- Kanban, Gantt, and Weekly Notes removed for viewers. Only project progress is shown. -->
+            <div style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:10px">
+              <div style="font-size:15px;color:var(--muted);margin-bottom:4px">Overall Progress</div>
+              <div style="position:relative;width:110px;height:110px;">
+                <svg width="110" height="110">
+                  <circle cx="55" cy="55" r="48" stroke="#222a36" stroke-width="10" fill="none" />
+                  <circle id="progressCircle" cx="55" cy="55" r="48" stroke="url(#circleGradient)" stroke-width="10" fill="none" stroke-linecap="round" stroke-dasharray="301.59" stroke-dashoffset="301.59"/>
+                  <defs>
+                    <linearGradient id="circleGradient" x1="0" y1="0" x2="110" y2="110" gradientUnits="userSpaceOnUse">
+                      <stop stop-color="#34d399"/>
+                      <stop offset="1" stop-color="#60a5fa"/>
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div id="circlePct" style="position:absolute;top:0;left:0;width:110px;height:110px;display:flex;align-items:center;justify-content:center;font-size:2.1em;font-weight:700;color:var(--accent)">0%</div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <p class="small" style="margin:6px 0 4px">Phases</p>
+            <ul id="phaseList" class="small" style="margin:0;padding-left:18px"></ul>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <h3 style="margin-top:0">How to Use</h3>
+        <ol class="small">
+          <li>This roadmap is view-only for visitors.</li>
+          <li>Progress and notes are updated by the project owner.</li>
+          <li>All data is loaded live from the project database.</li>
+        </ol>
+      </div>
+
+    </aside>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // Load Firebase SDK
+    const script = document.createElement('script');
+    script.src = "https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js";
+    script.onload = () => {
+      const firestoreScript = document.createElement('script');
+      firestoreScript.src = "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js";
+      firestoreScript.onload = initApp;
+      document.head.appendChild(firestoreScript);
+    };
+    document.head.appendChild(script);
+
+    function initApp() {
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+      // Fetch roadmap data (assume a single doc: 'roadmap/main')
+      db.collection('roadmap').doc('main').onSnapshot(doc => {
+        if (!doc.exists) return;
+        const data = doc.data();
+        renderAll(data);
+      });
+    }
+
+    // --- Rendering functions ---
+    function renderAll(data) {
+      renderGantt(data);
+      renderKanban(data);
+      renderProgress(data);
+      renderPhases(data);
+      renderNotes(data);
+    }
+
+    function renderGantt(data) {
+      const grid = document.getElementById('ganttGrid');
+      grid.innerHTML = '';
+      const headerPhase = document.createElement('div'); headerPhase.className = 'phase'; headerPhase.textContent = 'Phase'; grid.appendChild(headerPhase);
+      for (let i = 0; i < 16; i++) {
+        const col = document.createElement('div'); col.className = 'cell'; col.textContent = ''; grid.appendChild(col);
+      }
+      const rows = [
+        { name: 'Pre-Production', start: 0, end: 1 },
+        { name: 'Core Systems', start: 2, end: 6 },
+        { name: 'Content & Atmosphere', start: 6, end: 10 },
+        { name: 'Testing & Polish', start: 10, end: 12 },
+        { name: 'Release Prep', start: 12, end: 14 },
+        { name: 'Release', start: 14, end: 15 }
+      ];
+      rows.forEach(r => {
+        const phaseCell = document.createElement('div'); phaseCell.className = 'phase'; phaseCell.textContent = r.name; grid.appendChild(phaseCell);
+        for (let c = 0; c < 16; c++) {
+          const cell = document.createElement('div'); cell.className = 'cell';
+          if (c >= r.start && c <= r.end) {
+            const bar = document.createElement('div'); bar.className = 'bar'; bar.style.width = '100%'; cell.appendChild(bar);
+          }
+          grid.appendChild(cell);
+        }
+      });
+    }
+
+    function renderKanban(data) {
+      document.querySelectorAll('.column').forEach(c => { c.querySelectorAll('.card-item')?.forEach(n => n.remove()); });
+      const cols = ['todo', 'inprogress', 'testing', 'done'];
+      cols.forEach(col => {
+        const container = document.querySelector(`.column[data-col="${col}"]`);
+        const items = (data.tasks || []).filter(t => t.col === col);
+        items.forEach(it => {
+          const d = document.createElement('div');
+          d.className = 'card-item'; d.textContent = it.title;
+          container.appendChild(d);
+        });
+      });
+    }
+
+    function renderProgress(data) {
+      const circle = document.getElementById('progressCircle');
+      const pctText = document.getElementById('circlePct');
+      const total = (data.tasks || []).length || 1;
+      const done = (data.tasks || []).filter(t => t.col === 'done').length;
+      const pct = Math.round((done / total) * 100);
+      const circumference = 2 * Math.PI * 48;
+      const offset = circumference * (1 - pct / 100);
+      circle.style.strokeDashoffset = offset;
+      pctText.textContent = pct + '%';
+    }
+
+    function renderPhases(data) {
+      const phaseList = document.getElementById('phaseList');
+      phaseList.innerHTML = '';
+      const phases = [
+        { key: 'preprod', label: 'Pre-Production (Sept 15 – Sept 30)' },
+        { key: 'core', label: 'Core Systems (Oct 1 – Oct 31)' },
+        { key: 'content', label: 'Content & Atmosphere (Nov 1 – Nov 25)' },
+        { key: 'testing', label: 'Testing & Polish (Nov 26 – Dec 10)' },
+        { key: 'releaseprep', label: 'Release Prep (Dec 11 – Dec 20)' },
+        { key: 'release', label: 'Release (Dec 21 – Dec 25)' }
+      ];
+      phases.forEach(p => {
+        const li = document.createElement('li');
+        li.textContent = p.label + (data.phases && data.phases[p.key] ? ' ✔' : '');
+        phaseList.appendChild(li);
+      });
+    }
+
+    function renderNotes(data) {
+      const notesEl = document.getElementById('notes');
+      notesEl.value = data.notes || '';
+    }
+  </script>
+</body>
+</html>
